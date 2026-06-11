@@ -20,6 +20,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/tutors', require('./routes/tutors'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/reviews', require('./routes/reviews'));
@@ -43,7 +44,7 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync({ alter: false })
+sequelize.sync({ alter: true })
   .then(() => {
     console.log('✅ Kết nối MySQL thành công!');
     app.listen(PORT, () => {

@@ -10,6 +10,8 @@ const User = sequelize.define('User', {
   role: { type: DataTypes.ENUM('student', 'tutor', 'admin'), defaultValue: 'student' },
   school: { type: DataTypes.STRING(150) },
   grade: { type: DataTypes.STRING(20) },
+  address: { type: DataTypes.STRING(255) },
+  children: { type: DataTypes.JSON },
   avatar: { type: DataTypes.STRING(255) },
 }, {
   tableName: 'users',
