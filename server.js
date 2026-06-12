@@ -24,6 +24,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/tutors', require('./routes/tutors'));
 app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/', (req, res) => {
@@ -44,9 +45,33 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
+// Hàm seed admin
+const seedAdmin = async () => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const { User } = require('./models');
+    const adminEmail = 'admin@tutorconnect.com';
+    const existingAdmin = await User.findOne({ where: { email: adminEmail } });
+    if (!existingAdmin) {
+      const hashedPassword = await bcrypt.hash('admin123', 10);
+      await User.create({
+        full_name: 'System Admin',
+        email: adminEmail,
+        password: hashedPassword,
+        phone: '0123456789',
+        role: 'admin'
+      });
+      console.log('✨ Seeded default admin account: admin@tutorconnect.com / admin123');
+    }
+  } catch (err) {
+    console.error('❌ Error seeding admin user:', err);
+  }
+};
+
 sequelize.sync({ alter: true })
-  .then(() => {
+  .then(async () => {
     console.log('✅ Kết nối MySQL thành công!');
+    await seedAdmin();
     app.listen(PORT, () => {
       console.log(`🚀 Server đang chạy tại http://localhost:${PORT}`);
     });

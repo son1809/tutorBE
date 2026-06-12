@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { full_name, email, password, phone, role, school, grade, address, children } = req.body;
+  const { full_name, email, password, phone, role, school, grade } = req.body;
 
   try {
     const existing = await User.findOne({ where: { email } });
@@ -30,7 +30,7 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
       full_name, email, password: hashed, phone,
-      role: role || 'student', school, grade, address, children
+      role: role || 'student', school, grade
     });
 
     const token = generateToken(user);
@@ -93,12 +93,9 @@ exports.getMe = async (req, res) => {
 
 // PUT /api/auth/me  (cập nhật thông tin cá nhân)
 exports.updateMe = async (req, res) => {
-  const { full_name, phone, school, grade, address, children } = req.body;
+  const { full_name, phone, school, grade } = req.body;
   try {
-    await User.update(
-      { full_name, phone, school, grade, address, children },
-      { where: { id: req.user.id } }
-    );
+    await User.update({ full_name, phone, school, grade }, { where: { id: req.user.id } });
     const updated = await User.findByPk(req.user.id, { attributes: { exclude: ['password'] } });
     return res.json({ message: 'Cập nhật thành công!', user: updated });
   } catch (err) {
