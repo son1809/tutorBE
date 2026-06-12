@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const auth = require('../middleware/auth');
+const validate = require('../middleware/validate');
 const userController = require('../controllers/userController');
 
 const router = express.Router();
@@ -29,6 +30,6 @@ const profileValidation = [
 ];
 
 router.get('/profile', auth, userController.getProfile);
-router.put('/profile', auth, profileValidation, userController.updateProfile);
+router.put('/profile', auth, profileValidation, validate, userController.updateProfile);
 
 module.exports = router;

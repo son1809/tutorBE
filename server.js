@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const sequelize = require('./config/db');
+const runMigrations = require('./config/migrate');
 
 // Import models để đăng ký associations
 require('./models');
@@ -23,6 +24,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/tutors', require('./routes/tutors'));
 app.use('/api/bookings', require('./routes/bookings'));
+app.use('/api/admin/bookings', require('./routes/adminBookings'));
 app.use('/api/reviews', require('./routes/reviews'));
 
 // Health check
@@ -44,7 +46,8 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync({ alter: true })
+sequelize.sync()
+  .then(runMigrations)
   .then(() => {
     console.log('✅ Kết nối MySQL thành công!');
     app.listen(PORT, () => {

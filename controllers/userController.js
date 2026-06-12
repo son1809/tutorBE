@@ -1,4 +1,3 @@
-const { validationResult } = require('express-validator');
 const { User } = require('../models');
 
 exports.getProfile = async (req, res) => {
@@ -6,11 +5,6 @@ exports.getProfile = async (req, res) => {
 };
 
 exports.updateProfile = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const allowedFields = ['full_name', 'phone', 'school', 'grade', 'address', 'children'];
   const updates = {};
 

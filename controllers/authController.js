@@ -1,24 +1,32 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { validationResult } = require('express-validator');
-const { User } = require('../models');
+const { randomUUID } = require('crypto');
+const { User, AuthSession } = require('../models');
 
 // Tạo JWT token
-const generateToken = (user) => {
-  return jwt.sign(
+const generateToken = async (user) => {
+  const tokenId = randomUUID();
+  const token = jwt.sign(
     { id: user.id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+      jwtid: tokenId,
+    }
   );
+
+  const decoded = jwt.decode(token);
+  await AuthSession.create({
+    token_id: tokenId,
+    user_id: user.id,
+    expires_at: new Date(decoded.exp * 1000),
+  });
+
+  return token;
 };
 
 // POST /api/auth/register
 exports.register = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const { full_name, email, password, phone, role, school, grade, address, children } = req.body;
 
   try {
@@ -30,10 +38,11 @@ exports.register = async (req, res) => {
     const hashed = await bcrypt.hash(password, 10);
     const user = await User.create({
       full_name, email, password: hashed, phone,
-      role: role || 'student', school, grade, address, children
+      role: role === 'tutor' ? 'tutor' : 'student',
+      school, grade, address, children
     });
 
-    const token = generateToken(user);
+    const token = await generateToken(user);
     const { password: _, ...userInfo } = user.toJSON();
 
     return res.status(201).json({
@@ -49,11 +58,6 @@ exports.register = async (req, res) => {
 
 // POST /api/auth/login
 exports.login = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
   const { email, password } = req.body;
 
   try {
@@ -67,7 +71,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Email hoặc mật khẩu không đúng.' });
     }
 
-    const token = generateToken(user);
+    const token = await generateToken(user);
     const { password: _, ...userInfo } = user.toJSON();
 
     return res.json({
@@ -83,24 +87,9 @@ exports.login = async (req, res) => {
 
 // POST /api/auth/logout
 exports.logout = async (req, res) => {
-  return res.json({ message: 'Đăng xuất thành công!' });
-};
-
-// GET /api/auth/me
-exports.getMe = async (req, res) => {
-  return res.json({ user: req.user });
-};
-
-// PUT /api/auth/me  (cập nhật thông tin cá nhân)
-exports.updateMe = async (req, res) => {
-  const { full_name, phone, school, grade, address, children } = req.body;
   try {
-    await User.update(
-      { full_name, phone, school, grade, address, children },
-      { where: { id: req.user.id } }
-    );
-    const updated = await User.findByPk(req.user.id, { attributes: { exclude: ['password'] } });
-    return res.json({ message: 'Cập nhật thành công!', user: updated });
+    await req.authSession.update({ revoked_at: new Date() });
+    return res.json({ message: 'Đăng xuất thành công.' });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Lỗi server.' });

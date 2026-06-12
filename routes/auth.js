@@ -3,10 +3,11 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
+const validate = require('../middleware/validate');
 
 router.post('/register', [
   body('full_name').notEmpty().withMessage('Họ tên không được để trống'),
-  body('email').isEmail().withMessage('Email không hợp lệ'),
+  body('email').trim().isEmail().withMessage('Email không hợp lệ').normalizeEmail(),
   body('password').isLength({ min: 6 }).withMessage('Mật khẩu tối thiểu 6 ký tự'),
   body('role')
     .optional()
@@ -14,15 +15,13 @@ router.post('/register', [
   body('children')
     .optional({ nullable: true })
     .isArray().withMessage('Thông tin trẻ em phải là một danh sách'),
-], authController.register);
+], validate, authController.register);
 
 router.post('/login', [
-  body('email').isEmail().withMessage('Email không hợp lệ'),
+  body('email').trim().isEmail().withMessage('Email không hợp lệ').normalizeEmail(),
   body('password').notEmpty().withMessage('Mật khẩu không được để trống'),
-], authController.login);
+], validate, authController.login);
 
 router.post('/logout', auth, authController.logout);
-router.get('/me', auth, authController.getMe);
-router.put('/me', auth, authController.updateMe);
 
 module.exports = router;
