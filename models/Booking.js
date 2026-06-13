@@ -7,8 +7,8 @@ const Booking = sequelize.define('Booking', {
   tutor_id: { type: DataTypes.INTEGER, allowNull: false },
   subject: { type: DataTypes.STRING(50) },
   grade_level: { type: DataTypes.STRING(50) },
-  schedule_days: { type: DataTypes.STRING(100) }, // "Thứ 2, 4, 6"
-  schedule_time: { type: DataTypes.STRING(10) },  // "19:30"
+  booking_date: { type: DataTypes.DATEONLY, allowNull: false },
+  time_slot: { type: DataTypes.STRING(20), allowNull: false },
   note: { type: DataTypes.TEXT },
   status: { type: DataTypes.ENUM('pending', 'matched', 'cancelled'), defaultValue: 'pending' },
 }, {

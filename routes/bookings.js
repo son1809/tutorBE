@@ -6,5 +6,6 @@ const auth = require('../middleware/auth');
 router.post('/', auth, bookingController.createBooking);
 router.get('/my', auth, bookingController.getMyBookings);
 router.patch('/:id/status', auth, bookingController.updateStatus);
+router.get('/tutor/:id/availability', bookingController.getTutorAvailability);
 
 module.exports = router;
