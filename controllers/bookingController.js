@@ -112,3 +112,27 @@ exports.updateStatus = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi server.' });
   }
 };
+
+// PATCH /api/bookings/:id/cancel  (học sinh tự hủy đơn)
+exports.cancelMyBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findOne({
+      where: {
+        id: req.params.id,
+        student_id: req.user.id
+      }
+    });
+
+    if (!booking) return res.status(404).json({ message: 'Không tìm thấy đơn đăng ký.' });
+
+    if (booking.status !== 'pending') {
+      return res.status(400).json({ message: 'Chỉ có thể hủy đăng ký khi đang chờ duyệt.' });
+    }
+
+    await booking.update({ status: 'cancelled' });
+    return res.json({ message: 'Đã hủy yêu cầu học.', booking });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
