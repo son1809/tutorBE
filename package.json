@@ -1,5 +1,5 @@
 {
-  "name": "tutorconnect-server",
+  "name": "edumatch-server",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -20,6 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "mysql2": "^3.22.5",
+    "nodemailer": "^9.0.1",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {

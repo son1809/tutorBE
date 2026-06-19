@@ -28,7 +28,7 @@ app.use('/api/admin', require('./routes/admin'));
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ message: '✅ TutorConnect API đang chạy!', version: '1.0.0' });
+  res.json({ message: '✅ EduMatch API đang chạy!', version: '1.0.0' });
 });
 
 // 404 handler

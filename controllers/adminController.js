@@ -1,6 +1,10 @@
 const { User, Tutor, Booking, Review } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/db');
+const {
+  sendBookingApproved,
+  sendBookingCancelled,
+} = require('../utils/emailService');
 
 // Lấy thống kê tổng quan
 exports.getStats = async (req, res) => {
@@ -104,7 +108,7 @@ exports.deleteUser = async (req, res) => {
   try {
     const user = await User.findByPk(id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
-    if (user.role === 'admin' && user.email === 'admin@tutorconnect.com') {
+    if (user.role === 'admin' && user.email === 'admin@edumatch.vn') {
       return res.status(400).json({ message: 'Không thể xóa tài khoản admin hệ thống.' });
     }
     
@@ -210,8 +214,44 @@ exports.updateBookingStatus = async (req, res) => {
   try {
     const booking = await Booking.findByPk(id);
     if (!booking) return res.status(404).json({ message: 'Không tìm thấy lịch đặt.' });
-    
+
+    const oldStatus = booking.status;
     await booking.update({ status });
+
+    // Gửi email thông báo cho học sinh khi trạng thái thay đổi
+    if (oldStatus !== status && (status === 'matched' || status === 'cancelled')) {
+      try {
+        const student = await User.findByPk(booking.student_id, { attributes: ['full_name', 'email'] });
+        const tutor = await Tutor.findByPk(booking.tutor_id, {
+          include: [{ model: User, as: 'user', attributes: ['full_name'] }]
+        });
+        const tutorName = tutor?.user?.full_name || 'Gia sư';
+
+        if (student?.email) {
+          if (status === 'matched') {
+            await sendBookingApproved({
+              toEmail: student.email,
+              studentName: student.full_name,
+              booking,
+              tutorName,
+            });
+            console.log(`[Email] Đã gửi mail xác nhận lịch học tới ${student.email}`);
+          } else if (status === 'cancelled') {
+            await sendBookingCancelled({
+              toEmail: student.email,
+              studentName: student.full_name,
+              booking,
+              tutorName,
+              cancelledBy: 'admin',
+            });
+            console.log(`[Email] Đã gửi mail hủy lịch học tới ${student.email}`);
+          }
+        }
+      } catch (mailErr) {
+        console.error('[Email] Gửi mail thất bại:', mailErr.message);
+      }
+    }
+
     return res.json({ message: 'Cập nhật trạng thái thành công.', booking });
   } catch (err) {
     console.error('Error updating booking status:', err);
