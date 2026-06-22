@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Tutor, User, Review } = require('../models');
+const { Tutor, User, Review } = require('../../models');
 
 // GET /api/tutors  (danh sách + filter)
 exports.getAllTutors = async (req, res) => {
@@ -60,7 +60,9 @@ exports.getTutorById = async (req, res) => {
 
     if (!tutor) return res.status(404).json({ message: 'Không tìm thấy gia sư.' });
 
-    return res.json(tutor);
+    const result = tutor.toJSON();
+    result.availability = result.availability || [];
+    return res.json(result);
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Lỗi server.' });

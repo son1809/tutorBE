@@ -1,9 +1,9 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
-const adminBookingController = require('../controllers/adminBookingController');
-const auth = require('../middleware/auth');
-const authorize = require('../middleware/authorize');
-const validate = require('../middleware/validate');
+const adminBookingController = require('./admin-booking.controller');
+const auth = require('../../shared/middleware/auth');
+const authorize = require('../../shared/middleware/authorize');
+const validate = require('../../shared/middleware/validate');
 
 const router = express.Router();
 
@@ -32,6 +32,18 @@ router.put(
   ],
   validate,
   adminBookingController.cancelBooking
+);
+
+router.put(
+  '/:id/status',
+  [
+    param('id').isInt({ min: 1 }).withMessage('ID lịch học không hợp lệ'),
+    body('status')
+      .isIn(['in_progress', 'completed'])
+      .withMessage('Trạng thái chỉ có thể là in_progress hoặc completed'),
+  ],
+  validate,
+  adminBookingController.updateBookingStatus
 );
 
 router.get(

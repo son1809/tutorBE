@@ -1,10 +1,33 @@
 const express = require('express');
 const { body } = require('express-validator');
-const auth = require('../middleware/auth');
-const validate = require('../middleware/validate');
-const userController = require('../controllers/userController');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const auth = require('../../shared/middleware/auth');
+const validate = require('../../shared/middleware/validate');
+const userController = require('./user.controller');
 
 const router = express.Router();
+
+const avatarDir = path.join(__dirname, '../../uploads/avatars');
+fs.mkdirSync(avatarDir, { recursive: true });
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: avatarDir,
+    filename: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      cb(null, `${req.user.id}-${Date.now()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Chỉ được tải lên file ảnh.'));
+    }
+    cb(null, true);
+  },
+});
 
 const profileValidation = [
   body('full_name')
@@ -31,5 +54,6 @@ const profileValidation = [
 
 router.get('/profile', auth, userController.getProfile);
 router.put('/profile', auth, profileValidation, validate, userController.updateProfile);
+router.post('/avatar', auth, upload.single('avatar'), userController.uploadAvatar);
 
 module.exports = router;

@@ -1,4 +1,4 @@
-const { Booking, User, Tutor } = require('../models');
+const { Booking, User, Tutor } = require('../../models');
 
 const adminBookingIncludes = [
   {
@@ -114,6 +114,30 @@ exports.cancelBooking = async (req, res) => {
     });
 
     return res.json({ message: 'Hủy yêu cầu thành công.', booking });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+
+// PUT /api/admin/bookings/:id/status
+exports.updateBookingStatus = async (req, res) => {
+  const transitions = {
+    matched: 'in_progress',
+    in_progress: 'completed',
+  };
+
+  try {
+    const booking = await Booking.findByPk(req.params.id);
+    if (!booking) {
+      return res.status(404).json({ message: 'Không tìm thấy yêu cầu đặt lịch.' });
+    }
+    if (transitions[booking.status] !== req.body.status) {
+      return res.status(409).json({ message: 'Chuyển trạng thái không hợp lệ.' });
+    }
+
+    await booking.update({ status: req.body.status });
+    return res.json({ message: 'Cập nhật trạng thái thành công.', booking });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Lỗi server.' });

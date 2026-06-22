@@ -20,12 +20,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/tutors', require('./routes/tutors'));
-app.use('/api/bookings', require('./routes/bookings'));
-app.use('/api/admin/bookings', require('./routes/adminBookings'));
-app.use('/api/reviews', require('./routes/reviews'));
+app.use('/api/auth', require('./features/auth/auth.routes'));
+app.use('/api/users', require('./features/users/user.routes'));
+app.use('/api/tutors', require('./features/tutors/tutor.routes'));
+app.use('/api/bookings', require('./features/bookings/booking.routes'));
+app.use('/api/admin/bookings', require('./features/bookings/admin-booking.routes'));
+app.use('/api/reviews', require('./features/reviews/review.routes'));
 
 // Health check
 app.get('/', (req, res) => {

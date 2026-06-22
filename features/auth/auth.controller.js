@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { randomUUID } = require('crypto');
-const { User, AuthSession } = require('../models');
+const { User, AuthSession } = require('../../models');
 
 // Tạo JWT token
 const generateToken = async (user) => {

@@ -1,8 +1,8 @@
-const User = require('./User');
-const Tutor = require('./Tutor');
-const Booking = require('./Booking');
-const Review = require('./Review');
-const AuthSession = require('./AuthSession');
+const User = require('../features/users/user.models');
+const Tutor = require('../features/tutors/tutor.models');
+const Booking = require('../features/bookings/booking.models');
+const Review = require('../features/reviews/review.models');
+const AuthSession = require('../features/auth/auth-session.models');
 
 // User - Tutor (1:1)
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });

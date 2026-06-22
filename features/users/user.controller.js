@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User } = require('../../models');
 
 exports.getProfile = async (req, res) => {
   return res.json({ user: req.user });
@@ -21,6 +21,26 @@ exports.updateProfile = async (req, res) => {
     });
 
     return res.json({ message: 'Cập nhật thành công!', user: updated });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+
+exports.uploadAvatar = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'Vui lòng chọn ảnh để tải lên.' });
+  }
+
+  const avatar = `/uploads/avatars/${req.file.filename}`;
+
+  try {
+    await User.update({ avatar }, { where: { id: req.user.id } });
+    const updated = await User.findByPk(req.user.id, {
+      attributes: { exclude: ['password'] }
+    });
+
+    return res.json({ message: 'Tải ảnh thành công!', user: updated });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Lỗi server.' });

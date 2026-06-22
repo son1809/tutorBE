@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { Op } = require('sequelize');
-const { User, AuthSession } = require('../models');
+const { User, AuthSession } = require('../../models');
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;

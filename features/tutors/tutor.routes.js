@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const tutorController = require('../controllers/tutorController');
-const auth = require('../middleware/auth');
+const tutorController = require('./tutor.controller');
+const auth = require('../../shared/middleware/auth');
 
 router.get('/', tutorController.getAllTutors);
 router.get('/:id', tutorController.getTutorById);

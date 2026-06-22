@@ -1,13 +1,14 @@
 const express = require('express');
 const { body, param } = require('express-validator');
-const bookingController = require('../controllers/bookingController');
-const auth = require('../middleware/auth');
-const authorize = require('../middleware/authorize');
-const validate = require('../middleware/validate');
+const bookingController = require('./booking.controller');
+const auth = require('../../shared/middleware/auth');
+const authorize = require('../../shared/middleware/authorize');
+const validate = require('../../shared/middleware/validate');
 
 const router = express.Router();
 
 const createBookingValidation = [
+  body('tutor_id').optional({ nullable: true }).isInt({ min: 1 }).withMessage('ID gia sư không hợp lệ'),
   body('subject').trim().notEmpty().withMessage('Môn học không được để trống'),
   body('grade_level').trim().notEmpty().withMessage('Lớp học không được để trống'),
   body('schedule_days').trim().notEmpty().withMessage('Thời gian mong muốn không được để trống'),
@@ -29,11 +30,12 @@ const idValidation = [
 router.post(
   '/',
   auth,
-  authorize('student', 'tutor'),
+  authorize('student'),
   createBookingValidation,
   validate,
   bookingController.createBooking
 );
+router.put('/:id/cancel', auth, idValidation, validate, bookingController.cancelMyBooking);
 router.get('/my-requests', auth, bookingController.getMyRequests);
 
 // Alias giữ tương thích frontend cũ.

@@ -1,98 +1,222 @@
-# EduMatch
+# TutorConnect API
 
-## Chay project
+REST API used by EduMatch frontend. Built with Express, Sequelize, MySQL/MariaDB, and JWT authentication.
 
-```bash
-podman compose up -d --build
-podman compose ps
+## How API Works
+
+Request flow:
+
+```text
+React page
+  -> src/shared/api/api.service.js sends HTTP request
+  -> server.js selects route
+  -> middleware checks input, token, and role
+  -> controller runs business logic
+  -> Sequelize model reads/writes MySQL
+  -> controller returns JSON response
 ```
 
-Dia chi:
+Main folders:
+
+- `features/`: feature-owned routes, controllers, and models
+- `features/auth/`: login, register, logout, auth sessions
+- `features/users/`: user profile endpoints and model
+- `features/tutors/`: tutor listing, detail, profile endpoints, model
+- `features/bookings/`: student/admin booking endpoints and model
+- `features/reviews/`: review endpoints and model
+- `shared/middleware/`: authentication, authorization, validation
+- `models/`: association barrel for Sequelize relationships
+- `config/`: database connection and migrations
+
+## Run
+
+From project root, easiest option with Podman:
+
+```bash
+podman compose up --build
+```
+
+If `podman compose` is unavailable, install `podman-compose`, then run:
+
+```bash
+podman-compose up --build
+```
+
+`compose.yaml` works with Podman Compose. No Docker-specific changes required.
+
+Stop services:
+
+```bash
+podman compose down
+```
+
+Services:
 
 - Frontend: `http://localhost:5173`
-- Backend health: `http://localhost:5000`
+- API: `http://localhost:5000`
 - phpMyAdmin: `http://localhost:8080`
 
-## Tai khoan demo
-
-Admin:
-
-```text
-Email: api-test-admin@edumatch.local
-Password: 123456
-```
-
-Admin du phong:
-
-```text
-Email: demo-admin@edumatch.local
-Password: 123456
-```
-
-Dang nhap tai:
-
-```text
-http://localhost:5173/login
-```
-
-Tao hoac dat lai tai khoan Admin:
+Without Docker:
 
 ```bash
-podman compose exec backend npm run create-admin -- admin@example.com 123456 "EduMatch Admin"
+cd tutorBE
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-## Test API
+Create MySQL database named `tutorconnect` first. Update `.env` with local database credentials.
 
-Chay smoke test day du:
+## Authentication
+
+Register or login returns JWT:
+
+```json
+{
+  "message": "Đăng nhập thành công!",
+  "token": "eyJ...",
+  "user": {}
+}
+```
+
+Protected endpoints require header:
+
+```http
+Authorization: Bearer eyJ...
+```
+
+Frontend handles this automatically in `EduMatchFrontend/src/shared/api/api.service.js`.
+
+## Endpoints
+
+Base URL: `http://localhost:5000/api`
+
+| Method | Path | Auth | Purpose |
+|---|---|---|---|
+| POST | `/auth/register` | Public | Create student or tutor account |
+| POST | `/auth/login` | Public | Login and receive token |
+| POST | `/auth/logout` | User | Revoke current token |
+| GET | `/users/profile` | User | Read current profile |
+| PUT | `/users/profile` | User | Update current profile |
+| POST | `/users/avatar` | User | Upload profile/tutor avatar |
+| GET | `/tutors` | Public | List/filter tutors |
+| GET | `/tutors/:id` | Public | Read tutor details |
+| POST | `/tutors` | Tutor/admin | Create tutor profile |
+| PUT | `/tutors/:id` | Owner/admin | Update tutor profile |
+| POST | `/bookings` | Student | Create booking request |
+| GET | `/bookings/my-requests` | User | List own bookings |
+| GET | `/bookings/:id` | User | Read own booking |
+| PUT | `/bookings/:id/cancel` | User | Cancel own booking |
+| POST | `/reviews` | Student | Review completed booking |
+| GET | `/reviews/tutor/:tutorId` | Public | List tutor reviews |
+| GET | `/admin/bookings/pending` | Admin | List pending bookings |
+| GET | `/admin/bookings/all` | Admin | List/filter all bookings |
+| PUT | `/admin/bookings/:id/assign` | Admin | Assign tutor |
+| PUT | `/admin/bookings/:id/cancel` | Admin | Cancel booking |
+| PUT | `/admin/bookings/:id/status` | Admin | Update booking status |
+
+Tutor filters: `subject`, `grade_level`, `search`, `page`, `limit`.
+
+Admin booking filter: `status`.
+
+## Try API With curl
+
+Health check:
 
 ```bash
-./scripts/test-api.sh
+curl http://localhost:5000/
 ```
 
-Script co the chay tu thu muc `scripts`:
+Register student:
 
 ```bash
-cd scripts
-./test-api.sh
+curl -X POST http://localhost:5000/api/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "full_name": "Test Student",
+    "email": "student@example.com",
+    "password": "secret123",
+    "role": "student"
+  }'
 ```
 
-Ket qua mong doi:
+Login:
 
-```text
-ALL TESTS PASSED
+```bash
+curl -X POST http://localhost:5000/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"student@example.com","password":"secret123"}'
 ```
 
-## Test API bang browser
+Use returned token:
 
-1. Mo `http://localhost:5173/login`.
-2. Dang nhap tai khoan Admin.
-3. Mo DevTools bang `F12`.
-4. Chon tab Console.
+```bash
+curl http://localhost:5000/api/users/profile \
+  -H 'Authorization: Bearer YOUR_TOKEN'
+```
 
-Xem JWT:
+Create booking:
+
+```bash
+curl -X POST http://localhost:5000/api/bookings \
+  -H 'Content-Type: application/json' \
+  -H 'Authorization: Bearer YOUR_TOKEN' \
+  -d '{
+    "subject": "Math",
+    "grade_level": "10",
+    "schedule_days": "Monday and Wednesday",
+    "schedule_time": "18:00",
+    "learning_method": "online"
+  }'
+```
+
+## Add New Endpoint
+
+Example: `GET /api/example`.
+
+1. Add controller function:
 
 ```js
-localStorage.getItem('token')
+// features/example/example.controller.js
+exports.getExample = async (req, res) => {
+  return res.json({ message: 'Example works' });
+};
 ```
 
-Xem tat ca booking:
+2. Add route:
 
 ```js
-fetch('/api/admin/bookings/all', {
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem('token')}`
-  }
-}).then(r => r.json()).then(console.log)
+// features/example/example.routes.js
+const express = require('express');
+const controller = require('./example.controller');
+
+const router = express.Router();
+router.get('/', controller.getExample);
+
+module.exports = router;
 ```
 
-Xem booking dang cho:
+3. Mount route in `server.js`:
 
 ```js
-fetch('/api/admin/bookings/pending', {
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem('token')}`
-  }
-}).then(r => r.json()).then(console.log)
+app.use('/api/example', require('./features/example/example.routes'));
 ```
 
-Tai lieu request/response chi tiet: [`tutorBE/API.md`](tutorBE/API.md).
+4. Add frontend function in `EduMatchFrontend/src/shared/api/api.service.js`:
+
+```js
+export const exampleAPI = {
+  get: () => request('/example'),
+};
+```
+
+## Status Codes
+
+- `200`: request succeeded
+- `201`: resource created
+- `400`: invalid input
+- `401`: missing/invalid login token
+- `403`: logged in but role/action forbidden
+- `404`: resource or route missing
+- `409`: action conflicts with current state
+- `500`: server/database error

@@ -1,17 +1,25 @@
-const { Review, User, Tutor } = require('../models');
+const { Review, User, Tutor, Booking } = require('../../models');
 
 // POST /api/reviews  (gửi đánh giá)
 exports.createReview = async (req, res) => {
   const { tutor_id, booking_id, rating, comment } = req.body;
 
-  if (!rating || rating < 1 || rating > 5) {
-    return res.status(400).json({ message: 'Số sao phải từ 1 đến 5.' });
-  }
-
   try {
+    const booking = await Booking.findOne({
+      where: {
+        id: booking_id,
+        student_id: req.user.id,
+        tutor_id,
+        status: 'completed',
+      },
+    });
+    if (!booking) {
+      return res.status(403).json({ message: 'Chỉ có thể đánh giá gia sư sau khi hoàn thành lớp học.' });
+    }
+
     // Kiểm tra không đánh giá 2 lần
     const existing = await Review.findOne({
-      where: { student_id: req.user.id, tutor_id }
+      where: { booking_id }
     });
     if (existing) {
       return res.status(400).json({ message: 'Bạn đã đánh giá gia sư này rồi.' });

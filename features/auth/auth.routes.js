@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const authController = require('../controllers/authController');
-const auth = require('../middleware/auth');
-const validate = require('../middleware/validate');
+const authController = require('./auth.controller');
+const auth = require('../../shared/middleware/auth');
+const validate = require('../../shared/middleware/validate');
 
 router.post('/register', [
   body('full_name').notEmpty().withMessage('Họ tên không được để trống'),
