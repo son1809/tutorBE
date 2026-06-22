@@ -43,6 +43,21 @@ exports.getStats = async (req, res) => {
       include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'email', 'phone'] }]
     });
 
+    // 5 đánh giá gần đây nhất
+    const recentReviews = await Review.findAll({
+      limit: 5,
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: User, as: 'student', attributes: ['id', 'full_name'] },
+        { 
+          model: Tutor, 
+          as: 'tutor', 
+          attributes: ['id', 'subject'],
+          include: [{ model: User, as: 'user', attributes: ['id', 'full_name'] }]
+        }
+      ]
+    });
+
     return res.json({
       counts: {
         students: studentCount,
@@ -52,7 +67,8 @@ exports.getStats = async (req, res) => {
       },
       bookingStats,
       recentBookings,
-      pendingTutors
+      pendingTutors,
+      recentReviews
     });
   } catch (err) {
     console.error('Error getting admin stats:', err);

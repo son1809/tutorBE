@@ -11,6 +11,8 @@ const Booking = sequelize.define('Booking', {
   duration_months: { type: DataTypes.INTEGER, defaultValue: 1 }, // Số tháng đăng ký học
   days_of_week: { type: DataTypes.STRING(100) }, // Lưu trữ "T2, T4, T6"
   time_slot: { type: DataTypes.STRING(20), allowNull: false },
+  total_sessions: { type: DataTypes.INTEGER, defaultValue: 1 },
+  estimated_price: { type: DataTypes.INTEGER, defaultValue: 200000 },
   note: { type: DataTypes.TEXT },
   status: { type: DataTypes.ENUM('pending', 'matched', 'cancelled'), defaultValue: 'pending' },
 }, {

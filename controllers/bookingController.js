@@ -7,7 +7,7 @@ const {
 
 // POST /api/bookings  (học sinh đăng ký học)
 exports.createBooking = async (req, res) => {
-  const { tutor_id, subject, grade_level, booking_date, duration_months, days_of_week, time_slot, note } = req.body;
+  const { tutor_id, subject, grade_level, booking_date, duration_months, days_of_week, time_slot, note, total_sessions, estimated_price } = req.body;
 
   try {
     const tutor = await Tutor.findByPk(tutor_id, {
@@ -63,6 +63,8 @@ exports.createBooking = async (req, res) => {
       duration_months: duration_months || 1,
       days_of_week: days_of_week || '',
       time_slot,
+      total_sessions: total_sessions || 1,
+      estimated_price: estimated_price || 200000,
       note,
     });
 

@@ -8,13 +8,32 @@ exports.createReview = async (req, res) => {
     return res.status(400).json({ message: 'Số sao phải từ 1 đến 5.' });
   }
 
+  if (!booking_id) {
+    return res.status(400).json({ message: 'Vui lòng chọn một khóa học để đánh giá.' });
+  }
+
   try {
-    // Kiểm tra không đánh giá 2 lần
-    const existing = await Review.findOne({
-      where: { student_id: req.user.id, tutor_id }
+    // 1. Kiểm tra khóa học có tồn tại và thuộc về user không
+    const { Booking } = require('../models');
+    const booking = await Booking.findOne({
+      where: { id: booking_id, student_id: req.user.id, tutor_id }
     });
+
+    if (!booking) {
+      return res.status(400).json({ message: 'Khóa học không hợp lệ hoặc không thuộc về bạn.' });
+    }
+
+    if (booking.status !== 'matched') {
+      return res.status(400).json({ message: 'Bạn chỉ có thể đánh giá các khóa học đã đăng ký thành công (matched).' });
+    }
+
+    // 2. Kiểm tra xem booking này đã được đánh giá chưa
+    const existing = await Review.findOne({
+      where: { booking_id }
+    });
+    
     if (existing) {
-      return res.status(400).json({ message: 'Bạn đã đánh giá gia sư này rồi.' });
+      return res.status(400).json({ message: 'Bạn đã đánh giá khóa học này rồi.' });
     }
 
     const review = await Review.create({
@@ -41,6 +60,30 @@ exports.getTutorReviews = async (req, res) => {
       where: { tutor_id: req.params.tutorId },
       include: [{ model: User, as: 'student', attributes: ['id', 'full_name', 'avatar'] }],
       order: [['created_at', 'DESC']],
+    });
+    return res.json(reviews);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+
+// GET /api/reviews
+exports.getAllReviews = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const reviews = await Review.findAll({
+      limit,
+      order: [['created_at', 'DESC']],
+      include: [
+        { model: User, as: 'student', attributes: ['id', 'full_name', 'avatar'] },
+        { 
+          model: Tutor, 
+          as: 'tutor', 
+          attributes: ['id', 'subject'],
+          include: [{ model: User, as: 'user', attributes: ['id', 'full_name'] }]
+        }
+      ]
     });
     return res.json(reviews);
   } catch (err) {

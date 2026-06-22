@@ -2,25 +2,50 @@ const User = require('./User');
 const Tutor = require('./Tutor');
 const Booking = require('./Booking');
 const Review = require('./Review');
+const Payment = require('./Payment');
+const Conversation = require('./Conversation');
+const Message = require('./Message');
 
-// User - Tutor (1:1)
+// ─── User ↔ Tutor (1:1) ───────────────────────────────────────────
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });
 Tutor.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
-// Student (User) - Booking (1:N)
+// ─── Student (User) ↔ Booking (1:N) ──────────────────────────────
 User.hasMany(Booking, { foreignKey: 'student_id', as: 'bookings' });
 Booking.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 
-// Tutor - Booking (1:N)
+// ─── Tutor ↔ Booking (1:N) ───────────────────────────────────────
 Tutor.hasMany(Booking, { foreignKey: 'tutor_id', as: 'bookings' });
 Booking.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
 
-// Student (User) - Review (1:N)
+// ─── Student (User) ↔ Review (1:N) ───────────────────────────────
 User.hasMany(Review, { foreignKey: 'student_id', as: 'reviews' });
 Review.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 
-// Tutor - Review (1:N)
+// ─── Tutor ↔ Review (1:N) ────────────────────────────────────────
 Tutor.hasMany(Review, { foreignKey: 'tutor_id', as: 'reviews' });
 Review.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
 
-module.exports = { User, Tutor, Booking, Review };
+// ─── Payment ─────────────────────────────────────────────────────
+// Booking có thể có nhiều Payment (trường hợp retry khi thất bại)
+Booking.hasMany(Payment, { foreignKey: 'booking_id', as: 'payments' });
+Payment.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments' });
+Payment.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
+// ─── Chat: Conversation ↔ Message ────────────────────────────────
+// Mỗi User mở 1 cuộc hội thoại với Admin
+User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
+Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Mỗi Conversation có nhiều Messages
+Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });
+Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversation' });
+
+// Người gửi tin nhắn
+User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
+Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+
+module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message };
+
