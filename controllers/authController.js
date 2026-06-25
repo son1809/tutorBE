@@ -33,6 +33,16 @@ exports.register = async (req, res) => {
       role: role || 'student', school, grade
     });
 
+    if (user.role === 'tutor') {
+      const { Tutor } = require('../models');
+      await Tutor.create({
+        user_id: user.id,
+        subject: 'Chưa cập nhật',
+        education: [],
+        experience: []
+      });
+    }
+
     const token = generateToken(user);
     const { password: _, ...userInfo } = user.toJSON();
 

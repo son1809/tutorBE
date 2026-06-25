@@ -237,3 +237,100 @@ exports.cancelMyBooking = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi server.' });
   }
 };
+
+// GET /api/bookings/tutor-bookings  (lấy danh sách booking mà gia sư này được assign)
+exports.getTutorBookings = async (req, res) => {
+  if (req.user.role !== 'tutor') {
+    return res.status(403).json({ message: 'Chỉ gia sư mới có quyền truy cập.' });
+  }
+  try {
+    const tutor = await Tutor.findOne({ where: { user_id: req.user.id } });
+    if (!tutor) return res.status(404).json({ message: 'Không tìm thấy hồ sơ gia sư.' });
+
+    const bookings = await Booking.findAll({
+      where: { tutor_id: tutor.id },
+      include: [
+        { model: User, as: 'student', attributes: ['id', 'full_name', 'avatar', 'phone', 'email', 'grade', 'school'] }
+      ],
+      order: [['created_at', 'DESC']],
+    });
+    return res.json(bookings);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+
+// GET /api/bookings/tutor-stats  (thống kê tổng quan cho gia sư)
+exports.getTutorStats = async (req, res) => {
+  if (req.user.role !== 'tutor') {
+    return res.status(403).json({ message: 'Chỉ gia sư mới có quyền truy cập.' });
+  }
+  try {
+    const tutor = await Tutor.findOne({ where: { user_id: req.user.id } });
+    if (!tutor) return res.status(404).json({ message: 'Không tìm thấy hồ sơ gia sư.' });
+
+    const { Op } = require('sequelize');
+    const allBookings = await Booking.findAll({ where: { tutor_id: tutor.id } });
+
+    const totalClasses = allBookings.length;
+    const activeClasses = allBookings.filter(b => b.status === 'matched').length;
+    const pendingClasses = allBookings.filter(b => b.status === 'pending').length;
+    const cancelledClasses = allBookings.filter(b => b.status === 'cancelled').length;
+
+    // Tổng học sinh unique
+    const studentIds = [...new Set(allBookings.map(b => b.student_id))];
+    const totalStudents = studentIds.length;
+
+    // Thu nhập ước tính (chỉ tính các lớp matched)
+    const totalEarnings = allBookings
+      .filter(b => b.status === 'matched')
+      .reduce((sum, b) => sum + (b.estimated_price || 0), 0);
+
+    // Thu nhập tháng này
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEarnings = allBookings
+      .filter(b => b.status === 'matched' && new Date(b.created_at) >= startOfMonth)
+      .reduce((sum, b) => sum + (b.estimated_price || 0), 0);
+
+    // Tổng buổi đã/sẽ dạy
+    const totalSessions = allBookings
+      .filter(b => b.status === 'matched')
+      .reduce((sum, b) => sum + (b.total_sessions || 0), 0);
+
+    // Thu nhập 6 tháng gần nhất (theo tháng)
+    const monthlyData = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const label = `${month + 1}/${year}`;
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month + 1, 1);
+      const income = allBookings
+        .filter(b => b.status === 'matched' && new Date(b.created_at) >= start && new Date(b.created_at) < end)
+        .reduce((sum, b) => sum + (b.estimated_price || 0), 0);
+      monthlyData.push({ label, income });
+    }
+
+    return res.json({
+      totalClasses,
+      activeClasses,
+      pendingClasses,
+      cancelledClasses,
+      totalStudents,
+      totalEarnings,
+      monthEarnings,
+      totalSessions,
+      monthlyData,
+      rating: tutor.rating_avg || 0,
+      isVerified: tutor.is_verified,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+

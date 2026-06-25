@@ -67,6 +67,23 @@ exports.getTutorById = async (req, res) => {
   }
 };
 
+// GET /api/tutors/my-profile
+exports.getMyProfile = async (req, res) => {
+  try {
+    const tutor = await Tutor.findOne({
+      where: { user_id: req.user.id },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'full_name', 'avatar', 'phone'] }
+      ]
+    });
+    if (!tutor) return res.status(404).json({ message: 'Không tìm thấy hồ sơ gia sư của bạn.' });
+    return res.json(tutor);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};
+
 // POST /api/tutors  (tạo hồ sơ gia sư - chỉ role tutor)
 exports.createTutor = async (req, res) => {
   if (req.user.role !== 'tutor' && req.user.role !== 'admin') {
