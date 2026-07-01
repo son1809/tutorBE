@@ -116,6 +116,8 @@ app.use('/api/admin', require('./routes/admin'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/blog', require('./routes/blog'));
 app.use('/api/subjects', require('./routes/subjects'));
+app.use('/api/notifications', require('./routes/notifications'));
+app.use('/api/favorites', require('./routes/favorites'));
 
 // Health check
 app.get('/', (req, res) => {

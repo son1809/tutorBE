@@ -7,6 +7,8 @@ const Conversation = require('./Conversation');
 const Message = require('./Message');
 const Blog = require('./Blog');
 const Subject = require('./Subject');
+const Notification = require('./Notification');
+const FavoriteTutor = require('./FavoriteTutor');
 
 // ─── User ↔ Tutor (1:1) ───────────────────────────────────────────
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });
@@ -54,5 +56,15 @@ Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 User.hasMany(Blog, { foreignKey: 'author_id', as: 'blogs' });
 Blog.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
 
-module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject };
+// ─── Notifications ────────────────────────────────────────────
+User.hasMany(Notification, { foreignKey: 'user_id', as: 'notifications' });
+Notification.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// ─── FavoriteTutors ───────────────────────────────────────────
+User.hasMany(FavoriteTutor, { foreignKey: 'user_id', as: 'favoriteTutors' });
+FavoriteTutor.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+Tutor.hasMany(FavoriteTutor, { foreignKey: 'tutor_id', as: 'favoritedBy' });
+FavoriteTutor.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
+
+module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject, Notification, FavoriteTutor };
