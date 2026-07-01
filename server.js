@@ -114,6 +114,8 @@ app.use('/api/bookings', require('./routes/bookings'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/chat', require('./routes/chat'));
+app.use('/api/blog', require('./routes/blog'));
+app.use('/api/subjects', require('./routes/subjects'));
 
 // Health check
 app.get('/', (req, res) => {

@@ -5,6 +5,8 @@ const Review = require('./Review');
 const Payment = require('./Payment');
 const Conversation = require('./Conversation');
 const Message = require('./Message');
+const Blog = require('./Blog');
+const Subject = require('./Subject');
 
 // ─── User ↔ Tutor (1:1) ───────────────────────────────────────────
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });
@@ -47,5 +49,10 @@ Message.belongsTo(Conversation, { foreignKey: 'conversation_id', as: 'conversati
 User.hasMany(Message, { foreignKey: 'sender_id', as: 'sentMessages' });
 Message.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
 
-module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message };
+// ─── Blog ────────────────────────────────────────────────────────
+// Tác giả blog
+User.hasMany(Blog, { foreignKey: 'author_id', as: 'blogs' });
+Blog.belongsTo(User, { foreignKey: 'author_id', as: 'author' });
+
+module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject };
 

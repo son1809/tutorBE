@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
+const blogController = require('../controllers/blogController');
+const subjectController = require('../controllers/subjectController');
 
 // Middleware xác thực quyền Admin
 const adminOnly = (req, res, next) => {
@@ -35,5 +37,17 @@ router.delete('/bookings/:id', adminController.deleteBooking);
 // ─── QUẢN LÝ ĐÁNH GIÁ ───
 router.get('/reviews', adminController.getReviews);
 router.delete('/reviews/:id', adminController.deleteReview);
+
+// ─── QUẢN LÝ BLOG ───
+router.post('/blog', blogController.createBlog);
+router.put('/blog/:id', blogController.updateBlog);
+router.delete('/blog/:id', blogController.deleteBlog);
+router.patch('/blog/:id/toggle-publish', blogController.togglePublish);
+
+// ─── QUẢN LÝ MÔN HỌC (SUBJECTS) ───
+router.get('/subjects/stats', subjectController.getStats);
+router.post('/subjects', subjectController.create);
+router.put('/subjects/:id', subjectController.update);
+router.delete('/subjects/:id', subjectController.delete);
 
 module.exports = router;
