@@ -333,3 +333,45 @@ exports.deleteReview = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi xóa đánh giá.' });
   }
 };
+
+// Lấy danh sách học sinh và lịch học chi tiết
+exports.getStudentSchedules = async (req, res) => {
+  try {
+    const { search } = req.query;
+    const where = { role: 'student' }; // Học sinh có role = student
+    if (search) {
+      where[Op.or] = [
+        { full_name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { phone: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    const students = await User.findAll({
+      where,
+      attributes: ['id', 'full_name', 'email', 'phone', 'avatar', 'grade', 'school'],
+      include: [
+        {
+          model: Booking,
+          as: 'bookings',
+          where: { status: 'matched' },
+          required: false, // Lấy cả những học sinh chưa có lớp nào
+          include: [
+            {
+              model: Tutor,
+              as: 'tutor',
+              attributes: ['id', 'subject'],
+              include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'email', 'phone'] }]
+            }
+          ]
+        }
+      ],
+      order: [['created_at', 'DESC']]
+    });
+
+    return res.json(students);
+  } catch (err) {
+    console.error('Error getting student schedules:', err);
+    return res.status(500).json({ message: 'Lỗi lấy lịch học học sinh.' });
+  }
+};

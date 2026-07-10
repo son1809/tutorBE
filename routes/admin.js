@@ -23,6 +23,7 @@ router.get('/stats', adminController.getStats);
 router.get('/users', adminController.getUsers);
 router.put('/users/:id', adminController.updateUser);
 router.delete('/users/:id', adminController.deleteUser);
+router.get('/student-schedules', adminController.getStudentSchedules);
 
 // ─── QUẢN LÝ GIA SƯ ───
 router.get('/tutors', adminController.getTutors);

@@ -68,7 +68,11 @@ exports.getAllConversations = async (req, res) => {
 
   try {
     const conversations = await Conversation.findAll({
-      include: [{ model: User, as: 'user', attributes: ['id', 'full_name', 'avatar', 'email'] }],
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'full_name', 'avatar', 'email'] },
+        // Chỉ lấy conversation đã có ít nhất 1 tin nhắn
+        { model: Message, as: 'messages', attributes: ['id'], required: true },
+      ],
       order: [['last_message_at', 'DESC']],
     });
     return res.json(conversations);

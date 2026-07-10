@@ -4,6 +4,7 @@ const {
   sendBookingApproved,
   sendBookingCancelled,
 } = require('../utils/emailService');
+const notificationController = require('./notificationController');
 
 // POST /api/bookings  (học sinh đăng ký học)
 exports.createBooking = async (req, res) => {
@@ -77,6 +78,18 @@ exports.createBooking = async (req, res) => {
           studentName: student.full_name,
           booking,
           tutorName: tutor.user?.full_name || 'Gia sư',
+        });
+      }
+      
+      // Thông báo cho gia sư
+      if (tutor) {
+        await notificationController.create({
+          user_id: tutor.user_id,
+          type: 'booking_new',
+          title: 'Yêu cầu đặt lịch mới',
+          message: `Học sinh ${student?.full_name || 'ẩn danh'} vừa đăng ký học môn ${subject}.`,
+          link: '/tutor-dashboard',
+          ref_id: booking.id
         });
       }
     } catch (mailErr) {
@@ -172,6 +185,15 @@ exports.updateStatus = async (req, res) => {
             booking,
             tutorName,
           });
+          
+          await notificationController.create({
+            user_id: student.id,
+            type: 'booking_confirmed',
+            title: 'Lịch học đã được duyệt',
+            message: `Yêu cầu học môn ${booking.subject} với gia sư ${tutorName} đã được duyệt.`,
+            link: '/user-dashboard',
+            ref_id: booking.id
+          });
         } else if (status === 'cancelled') {
           await sendBookingCancelled({
             toEmail: student.email,
@@ -179,6 +201,15 @@ exports.updateStatus = async (req, res) => {
             booking,
             tutorName,
             cancelledBy: 'admin',
+          });
+          
+          await notificationController.create({
+            user_id: student.id,
+            type: 'booking_cancelled',
+            title: 'Lịch học bị hủy',
+            message: `Yêu cầu học môn ${booking.subject} với gia sư ${tutorName} đã bị hủy bởi Admin.`,
+            link: '/user-dashboard',
+            ref_id: booking.id
           });
         }
       }
@@ -225,6 +256,17 @@ exports.cancelMyBooking = async (req, res) => {
           booking,
           tutorName: tutor?.user?.full_name || 'Gia sư',
           cancelledBy: 'student',
+        });
+      }
+
+      if (tutor) {
+        await notificationController.create({
+          user_id: tutor.user_id,
+          type: 'booking_cancelled',
+          title: 'Học sinh hủy lịch',
+          message: `Học sinh ${student?.full_name || 'ẩn danh'} đã hủy yêu cầu đăng ký học môn ${booking.subject}.`,
+          link: '/tutor-dashboard',
+          ref_id: booking.id
         });
       }
     } catch (mailErr) {

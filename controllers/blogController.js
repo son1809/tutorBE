@@ -1,4 +1,5 @@
 const { Blog, User } = require('../models');
+const notificationController = require('./notificationController');
 
 const blogController = {
   // Public & Admin: Lấy danh sách blog
@@ -127,6 +128,18 @@ const blogController = {
 
       blog.is_published = !blog.is_published;
       await blog.save();
+
+      // Thông báo cho tác giả nếu được duyệt
+      if (blog.is_published) {
+        await notificationController.create({
+          user_id: blog.author_id,
+          type: 'blog_approved',
+          title: 'Bài viết được duyệt',
+          message: `Bài viết "${blog.title}" của bạn đã được duyệt và xuất bản thành công!`,
+          link: `/blog/${blog.id}`,
+          ref_id: blog.id
+        });
+      }
 
       res.json({ message: blog.is_published ? 'Đã xuất bản' : 'Đã ẩn', blog });
     } catch (err) {

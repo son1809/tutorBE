@@ -1,4 +1,5 @@
 const { Review, User, Tutor } = require('../models');
+const notificationController = require('./notificationController');
 
 // POST /api/reviews  (gửi đánh giá)
 exports.createReview = async (req, res) => {
@@ -44,7 +45,20 @@ exports.createReview = async (req, res) => {
     // Tính lại rating_avg cho gia sư
     const allReviews = await Review.findAll({ where: { tutor_id } });
     const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-    await Tutor.update({ rating_avg: Math.round(avg * 10) / 10 }, { where: { id: tutor_id } });
+    const tutorToUpdate = await Tutor.findByPk(tutor_id);
+    if (tutorToUpdate) {
+      await tutorToUpdate.update({ rating_avg: Math.round(avg * 10) / 10 });
+      
+      const student = await User.findByPk(req.user.id, { attributes: ['full_name'] });
+      await notificationController.create({
+        user_id: tutorToUpdate.user_id,
+        type: 'review_new',
+        title: 'Đánh giá mới',
+        message: `Học sinh ${student?.full_name || 'ẩn danh'} vừa để lại đánh giá ${rating} sao.`,
+        link: '/tutor-dashboard',
+        ref_id: review.id
+      });
+    }
 
     return res.status(201).json({ message: 'Cảm ơn đánh giá của bạn!', review });
   } catch (err) {
