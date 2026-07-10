@@ -9,6 +9,7 @@ const Blog = require('./Blog');
 const Subject = require('./Subject');
 const Notification = require('./Notification');
 const FavoriteTutor = require('./FavoriteTutor');
+const Report = require('./Report');
 
 // ─── User ↔ Tutor (1:1) ───────────────────────────────────────────
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });
@@ -67,4 +68,8 @@ FavoriteTutor.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Tutor.hasMany(FavoriteTutor, { foreignKey: 'tutor_id', as: 'favoritedBy' });
 FavoriteTutor.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
 
-module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject, Notification, FavoriteTutor };
+// ─── Reports ─────────────────────────────────────────────────────
+User.hasMany(Report, { foreignKey: 'reporter_id', as: 'reports' });
+Report.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
+
+module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject, Notification, FavoriteTutor, Report };

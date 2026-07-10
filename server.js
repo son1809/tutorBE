@@ -118,6 +118,7 @@ app.use('/api/blog', require('./routes/blog'));
 app.use('/api/subjects', require('./routes/subjects'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/favorites', require('./routes/favorites'));
+app.use('/api/reports', require('./routes/reports'));
 
 // Health check
 app.get('/', (req, res) => {

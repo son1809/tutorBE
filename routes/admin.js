@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const adminController = require('../controllers/adminController');
 const blogController = require('../controllers/blogController');
 const subjectController = require('../controllers/subjectController');
+const reportController = require('../controllers/reportController');
 
 // Middleware xác thực quyền Admin
 const adminOnly = (req, res, next) => {
@@ -50,5 +51,10 @@ router.get('/subjects/stats', subjectController.getStats);
 router.post('/subjects', subjectController.create);
 router.put('/subjects/:id', subjectController.update);
 router.delete('/subjects/:id', subjectController.delete);
+
+// ─── QUẢN LÝ BÁO CÁO (REPORTS) ───
+router.get('/reports', reportController.getReports);
+router.patch('/reports/:id', reportController.updateReport);
+router.delete('/reports/:id', reportController.deleteReport);
 
 module.exports = router;
