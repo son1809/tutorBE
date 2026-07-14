@@ -1,10 +1,11 @@
-const { User, Tutor, Booking, Review } = require('../models');
+const { User, Tutor, Booking, Review, Certificate } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/db');
 const {
   sendBookingApproved,
   sendBookingCancelled,
 } = require('../utils/emailService');
+const notificationController = require('./notificationController');
 
 // Lấy thống kê tổng quan
 exports.getStats = async (req, res) => {
@@ -160,6 +161,10 @@ exports.getTutors = async (req, res) => {
         as: 'user',
         attributes: ['id', 'full_name', 'email', 'phone', 'avatar'],
         where: Object.keys(userWhere).length ? userWhere : undefined
+      }, {
+        model: Certificate,
+        as: 'certificates',
+        attributes: ['id', 'file_name', 'file_url', 'created_at']
       }],
       order: [['created_at', 'DESC']]
     });
@@ -175,10 +180,36 @@ exports.verifyTutor = async (req, res) => {
   const { id } = req.params;
   const { is_verified } = req.body;
   try {
-    const tutor = await Tutor.findByPk(id);
+    const tutor = await Tutor.findByPk(id, {
+      include: [{ model: Certificate, as: 'certificates' }]
+    });
     if (!tutor) return res.status(404).json({ message: 'Không tìm thấy gia sư.' });
     
+    // Nếu admin duyệt (is_verified = true) thì kiểm tra chứng chỉ
+    if (is_verified) {
+      if (!tutor.certificates || tutor.certificates.length === 0) {
+        return res.status(400).json({ message: 'Không thể duyệt vì gia sư này chưa nộp bằng cấp/chứng chỉ nào.' });
+      }
+    }
+    
     await tutor.update({ is_verified });
+    
+    // Gửi thông báo cho gia sư
+    try {
+      await notificationController.create({
+        user_id: tutor.user_id,
+        type: 'system',
+        title: is_verified ? 'Hồ sơ gia sư đã được duyệt!' : 'Hồ sơ gia sư bị huỷ duyệt',
+        message: is_verified 
+          ? 'Chúc mừng! Hồ sơ của bạn đã được quản trị viên phê duyệt. Bây giờ học viên có thể tìm thấy và đặt lịch với bạn.'
+          : 'Hồ sơ của bạn đã bị quản trị viên huỷ duyệt do không đáp ứng đủ yêu cầu. Vui lòng liên hệ để biết thêm chi tiết.',
+        link: '/tutor/profile',
+        ref_id: tutor.id
+      });
+    } catch (notifErr) {
+      console.error('Lỗi khi gửi thông báo verify tutor:', notifErr);
+    }
+
     return res.json({ message: is_verified ? 'Đã duyệt gia sư.' : 'Đã hủy duyệt gia sư.', tutor });
   } catch (err) {
     console.error('Error verifying tutor:', err);
