@@ -3,11 +3,15 @@ const { Tutor, User, Review, Certificate } = require('../models');
 
 // GET /api/tutors  (danh sách + filter)
 exports.getAllTutors = async (req, res) => {
-  const { subject, grade_level, search, page = 1, limit = 12 } = req.query;
+  const { subject, grade_level, search, location, rating, page = 1, limit = 12 } = req.query;
 
   const where = {};
   if (subject) where.subject = subject;
   if (grade_level) where.grade_level = grade_level;
+  if (location) where.location = location;
+  if (rating) {
+    where.rating_avg = { [Op.gte]: parseFloat(rating) };
+  }
 
   const userWhere = {};
   if (search) {

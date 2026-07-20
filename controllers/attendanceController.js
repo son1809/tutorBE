@@ -151,11 +151,32 @@ exports.markAttendance = async (req, res) => {
       return res.status(400).json({ message: 'Chưa thể điểm danh cho buổi học trong tương lai.' });
     }
 
+    const oldStatus = session.status;
+
     await session.update({
       status,
       note: note || null,
       marked_at: new Date(),
     });
+
+    // Nếu chuyển từ chưa học (scheduled) sang đã học/vắng mặt -> Giải ngân tiền buổi học
+    if (oldStatus === 'scheduled' && (status === 'present' || status === 'absent')) {
+      if (session.booking.payment_method === 'vnpay') {
+        const tutor = await Tutor.findByPk(session.booking.tutor_id);
+        if (tutor) {
+          const tutorUser = await User.findByPk(tutor.user_id);
+          if (tutorUser) {
+            const totalSessions = session.booking.total_sessions || 1;
+            const feePerSession = Math.round(session.booking.estimated_price / totalSessions);
+            
+            await tutorUser.update({
+              locked_balance: Math.max(0, (tutorUser.locked_balance || 0) - feePerSession),
+              balance: (tutorUser.balance || 0) + feePerSession
+            });
+          }
+        }
+      }
+    }
 
     return res.json({ message: 'Điểm danh thành công!', session });
   } catch (err) {

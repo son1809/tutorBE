@@ -189,11 +189,24 @@ exports.updateRefundStatus = async (req, res) => {
       await Booking.update({ status: 'cancelled' }, { where: { id: refund.booking_id } });
     }
 
-    // Nếu chuyển sang processed, cộng tiền vào số dư của user
+    // Nếu chuyển sang processed, cộng tiền vào số dư của user và trừ tiền giam của gia sư
     if (status === 'processed' && oldStatus !== 'processed') {
       const student = await User.findByPk(refund.student_id);
       if (student) {
         await student.update({ balance: student.balance + refund.net_refund });
+      }
+
+      const booking = await Booking.findByPk(refund.booking_id);
+      if (booking) {
+        const tutor = await Tutor.findByPk(booking.tutor_id);
+        if (tutor) {
+          const tutorUser = await User.findByPk(tutor.user_id);
+          if (tutorUser) {
+            await tutorUser.update({
+              locked_balance: Math.max(0, (tutorUser.locked_balance || 0) - refund.gross_refund)
+            });
+          }
+        }
       }
     }
 

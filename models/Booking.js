@@ -14,6 +14,7 @@ const Booking = sequelize.define('Booking', {
   total_sessions: { type: DataTypes.INTEGER, defaultValue: 1 },
   estimated_price: { type: DataTypes.INTEGER, defaultValue: 200000 },
   note: { type: DataTypes.TEXT },
+  payment_method: { type: DataTypes.STRING(20), defaultValue: 'vnpay' },
   status: { type: DataTypes.ENUM('pending', 'matched', 'cancelled'), defaultValue: 'pending' },
 }, {
   tableName: 'bookings',

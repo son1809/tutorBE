@@ -113,3 +113,19 @@ exports.updateMe = async (req, res) => {
     return res.status(500).json({ message: 'Lỗi server.' });
   }
 };
+
+// PUT /api/auth/me/avatar
+exports.updateAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Vui lòng chọn ảnh đại diện.' });
+    }
+    const fileUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    await User.update({ avatar: fileUrl }, { where: { id: req.user.id } });
+    const updated = await User.findByPk(req.user.id, { attributes: { exclude: ['password'] } });
+    return res.json({ message: 'Cập nhật avatar thành công!', user: updated });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: 'Lỗi server.' });
+  }
+};

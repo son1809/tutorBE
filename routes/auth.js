@@ -3,6 +3,7 @@ const router = express.Router();
 const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const auth = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 router.post('/register', [
   body('full_name').notEmpty().withMessage('Họ tên không được để trống'),
@@ -18,5 +19,6 @@ router.post('/login', [
 router.post('/logout', auth, authController.logout);
 router.get('/me', auth, authController.getMe);
 router.put('/me', auth, authController.updateMe);
+router.put('/me/avatar', auth, upload.single('avatar'), authController.updateAvatar);
 
 module.exports = router;

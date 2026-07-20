@@ -8,7 +8,7 @@ const notificationController = require('./notificationController');
 
 // POST /api/bookings  (học sinh đăng ký học)
 exports.createBooking = async (req, res) => {
-  const { tutor_id, subject, grade_level, booking_date, duration_months, days_of_week, time_slot, note, total_sessions, estimated_price } = req.body;
+  const { tutor_id, subject, grade_level, booking_date, duration_months, days_of_week, time_slot, note, total_sessions, estimated_price, payment_method } = req.body;
 
   try {
     const tutor = await Tutor.findByPk(tutor_id, {
@@ -67,8 +67,21 @@ exports.createBooking = async (req, res) => {
       total_sessions: total_sessions || 1,
       estimated_price: estimated_price || 200000,
       note,
+      payment_method: payment_method || 'vnpay',
       status: 'matched', // Tự động duyệt sau thanh toán
     });
+
+    // Tự động giam tiền vào locked_balance của gia sư (chỉ khi thanh toán online qua vnpay)
+    if (booking.payment_method === 'vnpay') {
+      try {
+        const tutorUser = await User.findByPk(tutor.user_id);
+        if (tutorUser) {
+          await tutorUser.update({ locked_balance: (tutorUser.locked_balance || 0) + booking.estimated_price });
+        }
+      } catch (lockErr) {
+        console.error('[Finance] Lỗi giam tiền gia sư:', lockErr.message);
+      }
+    }
 
     // Tự động sinh danh sách buổi học (attendance)
     try {
@@ -198,7 +211,38 @@ exports.updateStatus = async (req, res) => {
     const booking = await Booking.findByPk(req.params.id);
     if (!booking) return res.status(404).json({ message: 'Không tìm thấy đơn đăng ký.' });
 
+    const oldStatus = booking.status;
     await booking.update({ status });
+
+    // Cập nhật locked_balance nếu admin duyệt tay (từ pending -> matched)
+    if (status === 'matched' && oldStatus === 'pending') {
+      const tutorInfo = await Tutor.findByPk(booking.tutor_id);
+      if (tutorInfo) {
+        const tutorUser = await User.findByPk(tutorInfo.user_id);
+        if (tutorUser) {
+          await tutorUser.update({ locked_balance: (tutorUser.locked_balance || 0) + booking.estimated_price });
+        }
+      }
+    } else if (status === 'cancelled' && oldStatus === 'matched') {
+      // Hủy khi đang diễn ra -> trừ lại locked_balance (nếu admin hủy tay)
+      // Ở đây ta giả sử admin hủy thì rút lại toàn bộ số tiền đang giam (chưa giải ngân).
+      // Logic chính xác hơn sẽ nằm ở RefundController, nhưng đây là fallback.
+      const tutorInfo = await Tutor.findByPk(booking.tutor_id);
+      if (tutorInfo) {
+        const tutorUser = await User.findByPk(tutorInfo.user_id);
+        if (tutorUser) {
+          // Tính số buổi chưa học (chưa mở khóa tiền)
+          const attendances = await Attendance.findAll({ where: { booking_id: booking.id } });
+          const taughtSessions = attendances.filter(a => a.status !== 'scheduled').length;
+          const totalSessions = booking.total_sessions || 1;
+          const remainingSessions = Math.max(0, totalSessions - taughtSessions);
+          const feePerSession = Math.round(booking.estimated_price / totalSessions);
+          const remainingAmount = remainingSessions * feePerSession;
+
+          await tutorUser.update({ locked_balance: Math.max(0, (tutorUser.locked_balance || 0) - remainingAmount) });
+        }
+      }
+    }
 
     // Gửi email thông báo thay đổi trạng thái cho học sinh
     try {

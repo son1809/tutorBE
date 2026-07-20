@@ -12,6 +12,7 @@ const User = sequelize.define('User', {
   grade: { type: DataTypes.STRING(20) },
   avatar: { type: DataTypes.STRING(255) },
   balance: { type: DataTypes.INTEGER, defaultValue: 0 },
+  locked_balance: { type: DataTypes.INTEGER, defaultValue: 0 },
 }, {
   tableName: 'users',
   timestamps: true,
