@@ -11,6 +11,9 @@ const Notification = require('./Notification');
 const FavoriteTutor = require('./FavoriteTutor');
 const Report = require('./Report');
 const Certificate = require('./Certificate');
+const Attendance = require('./Attendance');
+const RefundRequest = require('./RefundRequest');
+const WithdrawalRequest = require('./WithdrawalRequest');
 
 // ─── User ↔ Tutor (1:1) ───────────────────────────────────────────
 User.hasOne(Tutor, { foreignKey: 'user_id', as: 'tutorProfile' });
@@ -73,8 +76,22 @@ FavoriteTutor.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
 User.hasMany(Report, { foreignKey: 'reporter_id', as: 'reports' });
 Report.belongsTo(User, { foreignKey: 'reporter_id', as: 'reporter' });
 
-// ─── Certificate ─────────────────────────────────────────────────────
+// ─── Certificate ─────────────────────────────────────────────────────────
 Tutor.hasMany(Certificate, { foreignKey: 'tutor_id', as: 'certificates' });
 Certificate.belongsTo(Tutor, { foreignKey: 'tutor_id', as: 'tutor' });
 
-module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject, Notification, FavoriteTutor, Report, Certificate };
+// ─── Attendance ────────────────────────────────────────────────────────────
+Booking.hasMany(Attendance, { foreignKey: 'booking_id', as: 'attendances' });
+Attendance.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+// ─── RefundRequest ─────────────────────────────────────────────────────────
+Booking.hasMany(RefundRequest, { foreignKey: 'booking_id', as: 'refundRequests' });
+RefundRequest.belongsTo(Booking, { foreignKey: 'booking_id', as: 'booking' });
+User.hasMany(RefundRequest, { foreignKey: 'student_id', as: 'refundRequests' });
+RefundRequest.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
+
+// ─── WithdrawalRequest ─────────────────────────────────────────────────────
+User.hasMany(WithdrawalRequest, { foreignKey: 'user_id', as: 'withdrawalRequests' });
+WithdrawalRequest.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+module.exports = { User, Tutor, Booking, Review, Payment, Conversation, Message, Blog, Subject, Notification, FavoriteTutor, Report, Certificate, Attendance, RefundRequest, WithdrawalRequest };

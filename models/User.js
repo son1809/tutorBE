@@ -11,6 +11,7 @@ const User = sequelize.define('User', {
   school: { type: DataTypes.STRING(150) },
   grade: { type: DataTypes.STRING(20) },
   avatar: { type: DataTypes.STRING(255) },
+  balance: { type: DataTypes.INTEGER, defaultValue: 0 },
 }, {
   tableName: 'users',
   timestamps: true,

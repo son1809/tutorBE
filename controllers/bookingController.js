@@ -1,4 +1,4 @@
-const { Booking, Tutor, User } = require('../models');
+const { Booking, Tutor, User, Attendance } = require('../models');
 const {
   sendBookingConfirmation,
   sendBookingApproved,
@@ -67,7 +67,38 @@ exports.createBooking = async (req, res) => {
       total_sessions: total_sessions || 1,
       estimated_price: estimated_price || 200000,
       note,
+      status: 'matched', // Tự động duyệt sau thanh toán
     });
+
+    // Tự động sinh danh sách buổi học (attendance)
+    try {
+      const DAY_MAP = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+      const targetDays = (days_of_week || '').split(',').map(d => DAY_MAP[d.trim()]).filter(d => d !== undefined);
+      if (targetDays.length > 0) {
+        const sessions = [];
+        let current = new Date(booking_date);
+        current.setHours(0, 0, 0, 0);
+        const endDate = new Date(booking_date);
+        endDate.setMonth(endDate.getMonth() + (duration_months || 1));
+        while (current < endDate) {
+          if (targetDays.includes(current.getDay())) {
+            sessions.push(new Date(current));
+          }
+          current.setDate(current.getDate() + 1);
+        }
+        if (sessions.length > 0) {
+          const records = sessions.map((date, index) => ({
+            booking_id: booking.id,
+            session_number: index + 1,
+            session_date: date.toISOString().split('T')[0],
+            status: 'scheduled',
+          }));
+          await Attendance.bulkCreate(records);
+        }
+      }
+    } catch (attErr) {
+      console.error('[Attendance] Lỗi sinh buổi học:', attErr.message);
+    }
 
     // Gửi email xác nhận cho học sinh (không chặn response nếu lỗi mail)
     try {

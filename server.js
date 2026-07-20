@@ -119,6 +119,8 @@ app.use('/api/subjects', require('./routes/subjects'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/favorites', require('./routes/favorites'));
 app.use('/api/reports', require('./routes/reports'));
+app.use('/api/attendance', require('./routes/attendance'));
+app.use('/api/refunds', require('./routes/refunds'));
 
 // Health check
 app.get('/', (req, res) => {
