@@ -86,12 +86,19 @@ exports.createBooking = async (req, res) => {
     // Tự động sinh danh sách buổi học (attendance)
     try {
       const DAY_MAP = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+      const toLocalDate = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
       const targetDays = (days_of_week || '').split(',').map(d => DAY_MAP[d.trim()]).filter(d => d !== undefined);
       if (targetDays.length > 0) {
         const sessions = [];
-        let current = new Date(booking_date);
-        current.setHours(0, 0, 0, 0);
-        const endDate = new Date(booking_date);
+        // Dùng noon (12:00) để tránh lệch ngày khi chuyển UTC+7
+        const bParts = String(booking_date).split('T')[0].split('-');
+        let current = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]), 12, 0, 0);
+        const endDate = new Date(current);
         endDate.setMonth(endDate.getMonth() + (duration_months || 1));
         while (current < endDate) {
           if (targetDays.includes(current.getDay())) {
@@ -103,7 +110,7 @@ exports.createBooking = async (req, res) => {
           const records = sessions.map((date, index) => ({
             booking_id: booking.id,
             session_number: index + 1,
-            session_date: date.toISOString().split('T')[0],
+            session_date: toLocalDate(date),
             status: 'scheduled',
           }));
           await Attendance.bulkCreate(records);

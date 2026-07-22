@@ -11,10 +11,8 @@ const Message = sequelize.define('Message', {
   sender_id: { type: DataTypes.INTEGER, allowNull: false },
 
   // Vai trò của người gửi để phân biệt bubble bên trái/phải
-  sender_role: {
-    type: DataTypes.ENUM('user', 'admin'),
-    allowNull: false,
-  },
+  // 'user' | 'admin'
+  sender_role: { type: DataTypes.STRING(10), allowNull: false },
 
   // Nội dung tin nhắn
   content: { type: DataTypes.TEXT, allowNull: false },

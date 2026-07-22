@@ -8,10 +8,8 @@ const WithdrawalRequest = sequelize.define('WithdrawalRequest', {
   bank_name: { type: DataTypes.STRING(100), allowNull: false },   // Tên ngân hàng
   account_number: { type: DataTypes.STRING(50), allowNull: false }, // Số tài khoản
   account_name: { type: DataTypes.STRING(200), allowNull: false }, // Tên chủ tài khoản
-  status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'processed'),
-    defaultValue: 'pending',
-  },
+  // 'pending' | 'approved' | 'rejected' | 'processed'
+  status: { type: DataTypes.STRING(20), defaultValue: 'pending' },
   admin_note: { type: DataTypes.TEXT, allowNull: true },
   processed_at: { type: DataTypes.DATE, allowNull: true },
 }, {

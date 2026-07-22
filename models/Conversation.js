@@ -9,10 +9,8 @@ const Conversation = sequelize.define('Conversation', {
   user_id: { type: DataTypes.INTEGER, allowNull: false },
 
   // Trạng thái: open (đang mở), closed (đã giải quyết)
-  status: {
-    type: DataTypes.ENUM('open', 'closed'),
-    defaultValue: 'open',
-  },
+  // 'open' | 'closed'
+  status: { type: DataTypes.STRING(10), defaultValue: 'open' },
 
   // Số tin nhắn chưa đọc phía admin
   unread_admin: { type: DataTypes.INTEGER, defaultValue: 0 },

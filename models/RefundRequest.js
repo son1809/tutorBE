@@ -14,10 +14,8 @@ const RefundRequest = sequelize.define('RefundRequest', {
   fee_amount: { type: DataTypes.INTEGER, defaultValue: 0 },         // Số tiền phí hủy
   net_refund: { type: DataTypes.INTEGER, allowNull: false },        // Tiền hoàn thực tế
   reason: { type: DataTypes.TEXT, allowNull: true },                // Lý do hoàn tiền
-  status: {
-    type: DataTypes.ENUM('pending', 'approved', 'rejected', 'processed'),
-    defaultValue: 'pending',
-  },
+  // 'pending' | 'approved' | 'rejected' | 'processed'
+  status: { type: DataTypes.STRING(20), defaultValue: 'pending' },
   admin_note: { type: DataTypes.TEXT, allowNull: true },
   processed_at: { type: DataTypes.DATE, allowNull: true },
 }, {

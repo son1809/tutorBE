@@ -6,24 +6,18 @@ const Report = sequelize.define('Report', {
 
   reporter_id: { type: DataTypes.INTEGER, allowNull: false },
 
-  target_type: {
-    type: DataTypes.ENUM('tutor', 'blog', 'user', 'review'),
-    allowNull: false,
-  },
+  // 'tutor' | 'blog' | 'user' | 'review'
+  target_type: { type: DataTypes.STRING(20), allowNull: false },
 
   target_id: { type: DataTypes.INTEGER, allowNull: false },
 
-  reason: {
-    type: DataTypes.ENUM('spam', 'fake_info', 'inappropriate', 'scam', 'other'),
-    allowNull: false,
-  },
+  // 'spam' | 'fake_info' | 'inappropriate' | 'scam' | 'other'
+  reason: { type: DataTypes.STRING(30), allowNull: false },
 
   description: { type: DataTypes.TEXT },
 
-  status: {
-    type: DataTypes.ENUM('pending', 'reviewed', 'resolved', 'dismissed'),
-    defaultValue: 'pending',
-  },
+  // 'pending' | 'reviewed' | 'resolved' | 'dismissed'
+  status: { type: DataTypes.STRING(20), defaultValue: 'pending' },
 
   admin_note: { type: DataTypes.TEXT },
 }, {

@@ -14,10 +14,8 @@ const Payment = sequelize.define('Payment', {
   amount: { type: DataTypes.BIGINT, allowNull: false },
 
   // Phương thức: VNPAY | MOMO | CASH
-  payment_method: {
-    type: DataTypes.ENUM('VNPAY', 'MOMO', 'CASH'),
-    defaultValue: 'VNPAY',
-  },
+  // 'VNPAY' | 'MOMO' | 'CASH'
+  payment_method: { type: DataTypes.STRING(20), defaultValue: 'VNPAY' },
 
   // Mã giao dịch trả về từ cổng thanh toán
   transaction_id: { type: DataTypes.STRING(100), unique: true },
@@ -26,10 +24,8 @@ const Payment = sequelize.define('Payment', {
   gateway_data: { type: DataTypes.TEXT },
 
   // Trạng thái giao dịch
-  status: {
-    type: DataTypes.ENUM('pending', 'success', 'failed', 'refunded'),
-    defaultValue: 'pending',
-  },
+  // 'pending' | 'success' | 'failed' | 'refunded'
+  status: { type: DataTypes.STRING(20), defaultValue: 'pending' },
 
   // Thời điểm thanh toán thành công
   paid_at: { type: DataTypes.DATE },

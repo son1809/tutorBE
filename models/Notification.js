@@ -4,43 +4,32 @@ const sequelize = require('../config/db');
 const Notification = sequelize.define('Notification', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 
-  // Ai nhận thông báo
+  // Ai nhan thong bao
   user_id: { type: DataTypes.INTEGER, allowNull: false },
 
-  // Loại thông báo
-  type: {
-    type: DataTypes.ENUM(
-      'booking_new',       // Có đặt lịch mới (gia sư nhận)
-      'booking_confirmed', // Đặt lịch được xác nhận (học viên nhận)
-      'booking_cancelled', // Đặt lịch bị huỷ
-      'booking_completed', // Hoàn thành buổi học
-      'payment_success',   // Thanh toán thành công
-      'review_new',        // Có đánh giá mới (gia sư nhận)
-      'blog_approved',     // Blog được Admin duyệt (tác giả nhận)
-      'system'             // Thông báo hệ thống chung
-    ),
-    defaultValue: 'system',
-  },
+  // Loai thong bao: 'booking_new' | 'booking_confirmed' | 'booking_cancelled'
+  // | 'booking_completed' | 'payment_success' | 'review_new' | 'blog_approved' | 'system'
+  type: { type: DataTypes.STRING(50), defaultValue: 'system' },
 
-  // Tiêu đề ngắn
+  // Tieu de ngan
   title: { type: DataTypes.STRING(200), allowNull: false },
 
-  // Nội dung chi tiết
+  // Noi dung chi tiet
   message: { type: DataTypes.TEXT },
 
-  // Link điều hướng khi click (VD: /schedule, /blog/5)
+  // Link dieu huong khi click
   link: { type: DataTypes.STRING(300) },
 
-  // Đã đọc chưa
+  // Da doc chua
   is_read: { type: DataTypes.BOOLEAN, defaultValue: false },
 
-  // ID đối tượng liên quan (booking_id, blog_id, ...) để dễ debug
+  // ID doi tuong lien quan
   ref_id: { type: DataTypes.INTEGER },
 }, {
   tableName: 'notifications',
   timestamps: true,
   createdAt: 'created_at',
-  updatedAt: false, // Không cần updated_at cho notifications
+  updatedAt: false,
 });
 
 module.exports = Notification;
