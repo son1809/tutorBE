@@ -55,6 +55,8 @@ exports.createBooking = async (req, res) => {
       return res.status(400).json({ message: 'Lịch học này bị trùng với học sinh khác. Vui lòng chọn khung giờ hoặc ngày khác.' });
     }
 
+    const isVNPay = (payment_method || 'vnpay') === 'vnpay';
+
     const booking = await Booking.create({
       student_id: req.user.id,
       tutor_id,
@@ -68,11 +70,13 @@ exports.createBooking = async (req, res) => {
       estimated_price: estimated_price || 200000,
       note,
       payment_method: payment_method || 'vnpay',
-      status: 'matched', // Tự động duyệt sau thanh toán
+      // VNPay: tự động duyệt (đã thanh toán xác nhận)
+      // Tiền mặt: để admin duyệt thủ công (tránh spam)
+      status: isVNPay ? 'matched' : 'pending',
     });
 
     // Tự động giam tiền vào locked_balance của gia sư (chỉ khi thanh toán online qua vnpay)
-    if (booking.payment_method === 'vnpay') {
+    if (isVNPay) {
       try {
         const tutorUser = await User.findByPk(tutor.user_id);
         if (tutorUser) {
@@ -83,53 +87,61 @@ exports.createBooking = async (req, res) => {
       }
     }
 
-    // Tự động sinh danh sách buổi học (attendance)
-    try {
-      const DAY_MAP = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
-      const toLocalDate = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
-      const targetDays = (days_of_week || '').split(',').map(d => DAY_MAP[d.trim()]).filter(d => d !== undefined);
-      if (targetDays.length > 0) {
-        const sessions = [];
-        // Dùng noon (12:00) để tránh lệch ngày khi chuyển UTC+7
-        const bParts = String(booking_date).split('T')[0].split('-');
-        let current = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]), 12, 0, 0);
-        const endDate = new Date(current);
-        endDate.setMonth(endDate.getMonth() + (duration_months || 1));
-        while (current < endDate) {
-          if (targetDays.includes(current.getDay())) {
-            sessions.push(new Date(current));
+    // Tự động sinh danh sách buổi học (attendance) — chỉ khi đã matched (VNPay)
+    if (isVNPay) {
+      try {
+        const DAY_MAP = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+        const toLocalDate = (d) => {
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${y}-${m}-${day}`;
+        };
+        const targetDays = (days_of_week || '').split(',').map(d => DAY_MAP[d.trim()]).filter(d => d !== undefined);
+        if (targetDays.length > 0) {
+          const sessions = [];
+          // Dùng noon (12:00) để tránh lệch ngày khi chuyển UTC+7
+          const bParts = String(booking_date).split('T')[0].split('-');
+          let current = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]), 12, 0, 0);
+          const endDate = new Date(current);
+          endDate.setMonth(endDate.getMonth() + (duration_months || 1));
+          while (current < endDate) {
+            if (targetDays.includes(current.getDay())) {
+              sessions.push(new Date(current));
+            }
+            current.setDate(current.getDate() + 1);
           }
-          current.setDate(current.getDate() + 1);
+          if (sessions.length > 0) {
+            const records = sessions.map((date, index) => ({
+              booking_id: booking.id,
+              session_number: index + 1,
+              session_date: toLocalDate(date),
+              status: 'scheduled',
+            }));
+            await Attendance.bulkCreate(records);
+          }
         }
-        if (sessions.length > 0) {
-          const records = sessions.map((date, index) => ({
-            booking_id: booking.id,
-            session_number: index + 1,
-            session_date: toLocalDate(date),
-            status: 'scheduled',
-          }));
-          await Attendance.bulkCreate(records);
-        }
+      } catch (attErr) {
+        console.error('[Attendance] Lỗi sinh buổi học:', attErr.message);
       }
-    } catch (attErr) {
-      console.error('[Attendance] Lỗi sinh buổi học:', attErr.message);
     }
 
     // Gửi email xác nhận cho học sinh (không chặn response nếu lỗi mail)
     try {
       const student = await User.findByPk(req.user.id, { attributes: ['full_name', 'email'] });
       if (student?.email) {
-        await sendBookingConfirmation({
+        const emailData = {
           toEmail: student.email,
           studentName: student.full_name,
           booking,
           tutorName: tutor.user?.full_name || 'Gia sư',
-        });
+        };
+        
+        if (isVNPay) {
+          await sendBookingApproved(emailData);
+        } else {
+          await sendBookingConfirmation(emailData);
+        }
       }
       
       // Thông báo cho gia sư

@@ -12,4 +12,9 @@ router.get('/:conversationId/messages', auth, chatController.getMessages);
 // Admin: lấy tất cả conversations
 router.get('/admin/conversations', auth, chatController.getAllConversations);
 
+// Tutor chat
+router.post('/tutor-conversation', auth, chatController.getOrCreateTutorConversation);
+router.get('/tutor/conversations', auth, chatController.getTutorConversations);
+router.get('/user/tutor-conversations', auth, chatController.getUserTutorConversations);
+
 module.exports = router;

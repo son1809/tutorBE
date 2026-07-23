@@ -44,9 +44,13 @@ User.hasMany(Payment, { foreignKey: 'student_id', as: 'payments' });
 Payment.belongsTo(User, { foreignKey: 'student_id', as: 'student' });
 
 // ─── Chat: Conversation ↔ Message ────────────────────────────────
-// Mỗi User mở 1 cuộc hội thoại với Admin
+// Mỗi User mở 1 cuộc hội thoại với Admin hoặc Gia sư
 User.hasMany(Conversation, { foreignKey: 'user_id', as: 'conversations' });
 Conversation.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Hội thoại có thể có tutor_id nếu là chat với gia sư
+User.hasMany(Conversation, { foreignKey: 'tutor_id', as: 'tutorConversations' });
+Conversation.belongsTo(User, { foreignKey: 'tutor_id', as: 'tutor' });
 
 // Mỗi Conversation có nhiều Messages
 Conversation.hasMany(Message, { foreignKey: 'conversation_id', as: 'messages' });

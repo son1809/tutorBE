@@ -15,6 +15,12 @@ const Conversation = sequelize.define('Conversation', {
   // Số tin nhắn chưa đọc phía admin
   unread_admin: { type: DataTypes.INTEGER, defaultValue: 0 },
 
+  // Gia sư (nếu đây là cuộc hội thoại giữa học sinh và gia sư)
+  tutor_id: { type: DataTypes.INTEGER, allowNull: true },
+
+  // Số tin nhắn chưa đọc phía gia sư
+  unread_tutor: { type: DataTypes.INTEGER, defaultValue: 0 },
+
   // Số tin nhắn chưa đọc phía user
   unread_user: { type: DataTypes.INTEGER, defaultValue: 0 },
 

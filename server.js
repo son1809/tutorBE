@@ -54,8 +54,20 @@ io.on('connection', (socket) => {
         last_message: content,
         last_message_at: new Date(),
       };
-      if (sender_role === 'user') updateData.unread_admin = sequelize.literal('unread_admin + 1');
-      else updateData.unread_user = sequelize.literal('unread_user + 1');
+      // Logic cập nhật unread
+      // Nếu sender là user: tăng unread của admin (nếu là chat admin) hoặc tutor (nếu chat tutor)
+      // Nếu sender là admin: tăng unread của user
+      // Nếu sender là tutor: tăng unread của user
+      if (sender_role === 'user') {
+        const conversation = await Conversation.findByPk(conversation_id);
+        if (conversation && conversation.tutor_id) {
+          updateData.unread_tutor = sequelize.literal('unread_tutor + 1');
+        } else {
+          updateData.unread_admin = sequelize.literal('unread_admin + 1');
+        }
+      } else {
+        updateData.unread_user = sequelize.literal('unread_user + 1');
+      }
 
       await Conversation.update(updateData, { where: { id: conversation_id } });
 
@@ -76,11 +88,27 @@ io.on('connection', (socket) => {
   socket.on('mark_read', async ({ conversation_id, role }) => {
     try {
       const { Conversation, Message } = require('./models');
-      const field = role === 'admin' ? 'unread_admin' : 'unread_user';
+      
+      let field = 'unread_user';
+      if (role === 'admin') field = 'unread_admin';
+      if (role === 'tutor') field = 'unread_tutor';
+      
       await Conversation.update({ [field]: 0 }, { where: { id: conversation_id } });
+      
+      let senderRoleToMark = 'admin'; // if reader is user, they mark admin's messages as read
+      if (role === 'admin') senderRoleToMark = 'user';
+      if (role === 'tutor') senderRoleToMark = 'user';
+      
+      // If reader is user, they might be reading tutor messages.
+      // So we just mark all messages in this conversation where sender_role != role as read
       await Message.update(
         { is_read: true },
-        { where: { conversation_id, sender_role: role === 'admin' ? 'user' : 'admin' } }
+        { 
+          where: { 
+            conversation_id, 
+            sender_role: { [require('sequelize').Op.ne]: role } 
+          } 
+        }
       );
     } catch (err) {
       console.error('[Socket] Error marking read:', err.message);

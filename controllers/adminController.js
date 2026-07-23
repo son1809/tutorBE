@@ -1,4 +1,4 @@
-const { User, Tutor, Booking, Review, Certificate } = require('../models');
+const { User, Tutor, Booking, Review, Certificate, Attendance } = require('../models');
 const { Op } = require('sequelize');
 const sequelize = require('../config/db');
 const {
@@ -264,6 +264,65 @@ exports.updateBookingStatus = async (req, res) => {
 
     const oldStatus = booking.status;
     await booking.update({ status });
+
+    // Khi admin duyệt booking tiền mặt (pending -> matched): sinh attendance + giam tiền gia sư
+    if (oldStatus !== 'matched' && status === 'matched') {
+      // Sinh danh sách buổi học nếu chưa có
+      try {
+        const existingAttendance = await Attendance.findAll({ where: { booking_id: booking.id } });
+        if (existingAttendance.length === 0) {
+          const DAY_MAP = { 'CN': 0, 'T2': 1, 'T3': 2, 'T4': 3, 'T5': 4, 'T6': 5, 'T7': 6 };
+          const toLocalDate = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+          };
+          const days_of_week = booking.days_of_week || '';
+          const targetDays = days_of_week.split(',').map(d => DAY_MAP[d.trim()]).filter(d => d !== undefined);
+          if (targetDays.length > 0) {
+            const sessions = [];
+            const bParts = String(booking.booking_date).split('T')[0].split('-');
+            let current = new Date(parseInt(bParts[0]), parseInt(bParts[1]) - 1, parseInt(bParts[2]), 12, 0, 0);
+            const endDate = new Date(current);
+            endDate.setMonth(endDate.getMonth() + (booking.duration_months || 1));
+            while (current < endDate) {
+              if (targetDays.includes(current.getDay())) sessions.push(new Date(current));
+              current.setDate(current.getDate() + 1);
+            }
+            if (sessions.length > 0) {
+              const records = sessions.map((date, index) => ({
+                booking_id: booking.id,
+                session_number: index + 1,
+                session_date: toLocalDate(date),
+                status: 'scheduled',
+              }));
+              await Attendance.bulkCreate(records);
+              console.log(`[Admin Approve] Đã sinh ${records.length} buổi học cho booking #${booking.id}`);
+            }
+          }
+        }
+      } catch (attErr) {
+        console.error('[Admin Approve] Lỗi sinh buổi học:', attErr.message);
+      }
+
+      // Thông báo cho gia sư
+      try {
+        const tutor = await Tutor.findByPk(booking.tutor_id);
+        if (tutor) {
+          await notificationController.create({
+            user_id: tutor.user_id,
+            type: 'booking_approved',
+            title: 'Lớp học đã được duyệt',
+            message: `Lịch học môn ${booking.subject} đã được admin duyệt thành công.`,
+            link: '/tutor/dashboard',
+            ref_id: booking.id
+          });
+        }
+      } catch (notifErr) {
+        console.error('[Admin Approve] Lỗi gửi thông báo gia sư:', notifErr.message);
+      }
+    }
 
     // Gửi email thông báo cho học sinh khi trạng thái thay đổi
     if (oldStatus !== status && (status === 'matched' || status === 'cancelled')) {
